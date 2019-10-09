@@ -23,9 +23,7 @@ class Item extends Model
 
     protected $relationships = [
         'item_stockables', 'item_stocks',
-        'incoming_good_items', 'outgoing_good_items',
-        'work_order_items', 'work_production_items', 'packing_items',
-        'forecast_items', 'request_order_items', 'delivery_order_items',
+        'forecast_items', 'incoming_good_items', 'outgoing_good_items',
     ];
 
     public function incoming_good_items() {
@@ -40,24 +38,8 @@ class Item extends Model
         return $this->hasMany('App\Models\Factory\WorkOrderItem');
     }
 
-    public function work_production_items() {
-        return $this->hasMany('App\Models\Factory\WorkProductionItem');
-    }
-
-    public function packing_items() {
-        return $this->hasMany('App\Models\Factory\PackingItem');
-    }
-
     public function forecast_items() {
         return $this->hasMany('App\Models\Income\ForecastItem');
-    }
-
-    public function request_order_items() {
-        return $this->hasMany('App\Models\Income\RequestOrderItem');
-    }
-
-    public function delivery_order_items() {
-        return $this->hasMany('App\Models\Income\DeliveryOrderItem');
     }
 
     public function item_prelines()

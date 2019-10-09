@@ -1,11 +1,10 @@
 <?php
-namespace App\Filters\Factory;
+namespace App\Filters\Income;
 
 use App\Filters\Filter;
 use Illuminate\Http\Request;
-use Carbon\Carbon;
 
-class WorkProduction extends Filter
+class Customer extends Filter
 {
     protected $request;
     public function __construct(Request $request)
@@ -13,9 +12,4 @@ class WorkProduction extends Filter
         $this->request = $request;
         parent::__construct($request);
     }
-
-    public function line_id($value) {
-        return $this->builder->where('line_id', $value);
-    }
-
 }

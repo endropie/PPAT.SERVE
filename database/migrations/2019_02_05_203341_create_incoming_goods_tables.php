@@ -32,8 +32,6 @@ class CreateIncomingGoodsTables extends Migration
             $table->text('description')->nullable();
             $table->string('status')->default('OPEN');
 
-            $table->integer('request_order_id')->nullable();
-            // $table->integer('pre_delivery_id')->nullable();
             $table->integer('revise_id')->nullable();
             $table->integer('revise_number')->nullable();
 
@@ -48,12 +46,8 @@ class CreateIncomingGoodsTables extends Migration
 
             $table->integer('item_id');
             $table->float('quantity');
-            $table->float('valid')->nullable();
-
             $table->integer('unit_id');
             $table->float('unit_rate')->default(1);
-
-            $table->integer('request_order_item_id')->nullable();
 
             $table->text('note')->nullable();
             $table->timestamps();

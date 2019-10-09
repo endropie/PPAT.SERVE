@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\Incomes;
 
 use App\Http\Requests\Income\Forecast as Request;
 use App\Http\Controllers\ApiController;
-use App\Filters\Income\RequestOrder as Filters;
+use App\Filters\Income\Forecast as Filters;
 use App\Models\Income\Forecast;
 use App\Traits\GenerateNumber;
 

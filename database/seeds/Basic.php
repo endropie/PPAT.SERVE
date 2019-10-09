@@ -26,43 +26,8 @@ class Basic extends Seeder
         $this->category_items();
 		$this->sizes();
 		$this->units();
-		$this->shifts();
-        $this->faults();
         $this->provinces();
     }
-
-	public function faults()
-    {
-		DB::table('faults')->truncate();
-		DB::table('type_faults')->truncate();
-
-		$coating = TypeFault::create(['id'=> 1,'name'=>'ED Coating','description'=>'This Description is Not Good Coating']);
-		$coating->faults()->create(['name'=>'Others']);
-		$coating->faults()->create(['name'=>'Kabut']);
-		$coating->faults()->create(['name'=>'Buram']);
-		$coating->faults()->create(['name'=>'Scratch']);
-		$coating->faults()->create(['name'=>'Jamur']);
-		$coating->faults()->create(['name'=>'No paint']);
-		$coating->faults()->create(['name'=>'Kasar']);
-		$coating->faults()->create(['name'=>'Nempel Jig']);
-		$coating->faults()->create(['name'=>'Water over']);
-
-		$plating = TypeFault::create(['id'=> 2,'name'=>'ZN Plating','description'=>'This Description is Not Good Plating']);
-		$coating->faults()->create(['name'=>'Others']);
-		$plating->faults()->create(['name'=>'Kotor']);
-		$plating->faults()->create(['name'=>'keropos']);
-		$plating->faults()->create(['name'=>'karat']);
-		$plating->faults()->create(['name'=>'Jamur']);
-	}
-
-	public function shifts()
-    {
-        DB::table('shifts')->truncate();
-
-		Shift::create(['id'=> 1,'name'=>'1','description'=>'The description for Shifting 1']);
-		Shift::create(['id'=> 2,'name'=>'2','description'=>'The description for Shifting 2']);
-		Shift::create(['id'=> 3,'name'=>'3','description'=>'The description for Shifting 3']);
-	}
 
 	public function sizes()
     {
@@ -175,23 +140,13 @@ class Basic extends Seeder
 			// Common
 			'items' => ['c','r','u','d','price','reference'],
 			'employees' => ['c','r','u','d','reference'],
-			// Factories
-			'packings' => ['c','r','u','d','close','void'],
-			'work-orders' => ['c','r','u','d','close','revision','void'],
-			'work-productions' => ['c','r','u','d','close','void'],
-			'work-process' => ['r','confirm'],
 			// Incomes
 			'customers' => ['c','r','u','d'],
 			'forecasts' => ['c','r','u','d','close','void'],
-			'request-orders' => ['c','r','u','d','close','revision','void'],
 			// Warehouses
             'incoming-goods' => ['c','r','u','d','validation','revision','void'],
+            'outgoing-goods' => ['c','r','u','d','validation','revision','void'],
             'opname-stocks' => ['c','r','u','d','validation','revision','void'],
-            // Deliveries
-			'outgoing-verifications' => ['c','r','u','d'],
-			'outgoing-goods' => ['c','r','d','void'],
-			'pre-deliveries' => ['c','r','u','d','close','revision','void'],
-			'sj-delivery-orders' => ['c','r','u','d','confirm','revision','void'],
 			// Reference
 			'brands'		=> ['c','r','u','d'],
 			'colors' => ['c','r','u','d'],
@@ -212,23 +167,13 @@ class Basic extends Seeder
 		$roles = [
 			'auth'	    => ['users', 'roles', 'permissions'],
 			'common'    => ['items', 'employees'],
-            'marketing' => ['customers', 'forecasts', 'request-orders' ],
+            'marketing' => ['customers', 'forecasts'],
 
-            'work.order' => ['work-orders'],
-            'work.production' => ['work-productions'],
-            'work.process' => ['work-process'],
-            'packing' => ['packings'],
-
-            'outgoing.verify' => ['outgoing-verifications'],
-            'outgoing.good' => ['outgoing-goods'],
-            'sj.delivery' => ['sj-delivery-orders'],
-            'pre.delivery' => ['pre-deliveries'],
-
-            'incoming.good' => ['incoming-goods', 'opname-stocks'],
+            'user' => ['incoming-goods', 'outgoing-goods', 'opname-stocks'],
 
 			'reference' => [
-				'brands', 'colors', 'faults', 'lines', 'shifts', 'sizes',
-				'specifications', 'type-faults',
+				'brands', 'colors', 'lines', 'sizes',
+				'specifications',
                 'category-items', 'type-items', 'units',
                 'departments', 'positions', 'vehicles'
 			]

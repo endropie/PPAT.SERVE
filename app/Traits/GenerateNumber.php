@@ -19,104 +19,6 @@ trait GenerateNumber
         return $number;
     }
 
-    public function getNextRequestOrderNumber($date = null)
-    {
-        $modul = 'request_order';
-        $digit = (int) setting()->get("$modul.number_digit", 5);
-        $prefix = $this->prefixParser($modul);
-        $prefix = $this->dateParser($prefix, $date);
-
-        $next = \App\Models\Income\RequestOrder::withTrashed()->where('number','LIKE', $prefix.'%')->max('number');
-        $next = $next ? (int) str_replace($prefix,'', $next) : 0;
-        $next++;
-
-        $number = $prefix . str_pad($next, $digit, '0', STR_PAD_LEFT);
-
-        return $number;
-    }
-
-    public function getNextPreDeliveryNumber($date = null)
-    {
-        $modul = 'pre_delivery';
-        $digit = (int) setting()->get("$modul.number_digit", 5);
-        $prefix = $this->prefixParser($modul);
-        $prefix = $this->dateParser($prefix, $date);
-
-        $next = \App\Models\Income\PreDelivery::withTrashed()->where('number','LIKE', $prefix.'%')->max('number');
-        $next = $next ? (int) str_replace($prefix,'', $next) : 0;
-        $next++;
-
-        $number = $prefix . str_pad($next, $digit, '0', STR_PAD_LEFT);
-
-        return $number;
-    }
-
-    public function getNextSJDeliveryNumber($date = null)
-    {
-        $modul = 'sj_delivery';
-        $digit = (int) setting()->get("$modul.number_digit", 5);
-        $prefix = $this->prefixParser($modul);
-        $prefix = $this->dateParser($prefix, $date);
-
-        $next = \App\Models\Income\DeliveryOrder::withTrashed()->where('number','LIKE', $prefix.'%')->max('number');
-        $next = $next ? (int) str_replace($prefix,'', $next) : 0;
-        $next++;
-
-        $number = $prefix . str_pad($next, $digit, '0', STR_PAD_LEFT);
-
-        return $number;
-    }
-
-    public function getNextPackingNumber($date = null)
-    {
-        $modul = 'packing';
-        $digit = (int) setting()->get("$modul.number_digit", 5);
-        $prefix = $this->prefixParser($modul);
-        $prefix = $this->dateParser($prefix, $date);
-
-        $next = \App\Models\Factory\Packing::withTrashed()->where('number','LIKE', $prefix.'%')->max('number');
-        $next = $next ? (int) str_replace($prefix,'', $next) : 0;
-        $next++;
-
-        $number = $prefix . str_pad($next, $digit, '0', STR_PAD_LEFT);
-
-        return $number;
-    }
-
-    public function getNextWorkProductionNumber($date = null)
-    {
-        $modul = 'work_production';
-        $digit = (int) setting()->get("$modul.number_digit", 5);
-        $prefix = $this->prefixParser($modul);
-        $prefix = $this->dateParser($prefix, $date);
-
-        $prefix = $this->dateParser($prefix, $date);
-
-        $next = \App\Models\Factory\WorkProduction::withTrashed()->where('number','LIKE', $prefix.'%')->max('number');
-        $next = $next ? (int) str_replace($prefix,'', $next) : 0;
-        $next++;
-
-        $number = $prefix . str_pad($next, $digit, '0', STR_PAD_LEFT);
-
-        return $number;
-    }
-
-    public function getNextWorkOrderNumber($date = null)
-    {
-        $modul = 'work_order';
-        $digit = (int) setting()->get("$modul.number_digit", 5);
-        $prefix = $this->prefixParser($modul);
-        $prefix = $this->dateParser($prefix, $date);
-
-        $next = \App\Models\Factory\WorkOrder::withTrashed()->where('number','LIKE', $prefix.'%')->max('number');
-        $next = $next ? (int) str_replace($prefix,'', $next) : 0;
-        $next++;
-
-        $number = $prefix . str_pad($next, $digit, '0', STR_PAD_LEFT);
-
-        return $number;
-    }
-
     public function getNextIncomingGoodNumber($date = null)
     {
         $modul = 'incoming_good';
@@ -132,8 +34,6 @@ trait GenerateNumber
 
         return $number;
     }
-
-
 
     public function getNextIncomingGoodIndexedNumber($date = null, $prefix)
     {

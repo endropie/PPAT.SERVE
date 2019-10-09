@@ -23,7 +23,7 @@ Route::prefix('v1')->namespace('Api')->group(function() {
     });
 
     Route::middleware([
-        'auth:api',
+        // 'auth:api',
         ])->group( function(){
 
         Route::prefix('auth')->name('auth.')->group(function () {
@@ -50,33 +50,19 @@ Route::prefix('v1')->namespace('Api')->group(function() {
         Route::prefix('incomes')->name('incomes.')->group(function () {
             Route::apiResource('customers', 'Incomes\Customers');
             Route::apiResource('forecasts', 'Incomes\Forecasts');
-            Route::apiResource('request-orders', 'Incomes\RequestOrders');
-            Route::apiResource('pre-deliveries', 'Incomes\PreDeliveries');
-            Route::apiResource('delivery-orders', 'Incomes\DeliveryOrders');
         });
 
         Route::prefix('warehouses')->name('warehouses.')->group(function () {
-            Route::apiResource('transports', 'Warehouses\Transports');
             Route::apiResource('incoming-goods', 'Warehouses\IncomingGoods');
             Route::apiResource('opname-stocks', 'Warehouses\OpnameStocks');
             Route::apiResource('outgoing-goods', 'Warehouses\OutgoingGoods');
-            Route::apiResource('outgoing-good-verifications', 'Warehouses\OutgoingGoodVerifications');
-        });
-
-        Route::prefix('factories')->name('factories.')->group(function () {
-            Route::apiResource('work-productions', 'Factories\WorkProductions');
-            Route::apiResource('work-orders', 'Factories\WorkOrders');
-            Route::apiResource('packings', 'Factories\Packings');
         });
 
         Route::prefix('references')->name('references.')->group(function () {
             Route::apiResource('departments', 'References\Departments');
             Route::apiResource('positions', 'References\Positions');
             Route::apiResource('vehicles', 'References\Vehicles');
-            Route::apiResource('faults', 'References\Faults');
-            Route::apiResource('type_faults', 'References\TypeFaults');
             Route::apiResource('lines', 'References\Lines');
-            Route::apiResource('shifts', 'References\Shifts');
             Route::apiResource('provinces', 'References\Provinces');
             Route::apiResource('units', 'References\Units');
             Route::apiResource('sizes', 'References\Sizes');

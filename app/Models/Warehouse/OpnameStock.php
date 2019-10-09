@@ -14,6 +14,8 @@ class OpnameStock extends Model
         'number', 'date', 'reference', 'description'
     ];
 
+    protected $appends = ['full_number'];
+
     protected $relationships = [];
 
     protected $hidden = [];
@@ -21,5 +23,11 @@ class OpnameStock extends Model
     public function opname_stock_items()
     {
         return $this->hasMany('App\Models\Warehouse\OpnameStockItem')->withTrashed();
+    }
+
+    public function getFullNumberAttribute()
+    {
+        $append = $this->revise_number ? ' REV.' . $this->revise_number : '';
+        return $this->number . $append;
     }
 }

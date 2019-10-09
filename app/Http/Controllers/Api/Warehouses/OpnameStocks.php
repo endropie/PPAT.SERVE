@@ -21,13 +21,13 @@ class OpnameStocks extends ApiController
 
             case 'datagrid':
                 $opname_stocks = OpnameStock::filter($filters)->latest()->get();
-                $opname_stocks->each->setAppends(['is_relationship']);
+                $opname_stocks->each->append(['is_relationship']);
                 break;
 
             default:
                 $opname_stocks = OpnameStock::filter($filters)->latest()->collect();
                 $opname_stocks->getCollection()->transform(function($item) {
-                    $item->setAppends(['is_relationship']);
+                    $item->append(['is_relationship']);
                     return $item;
                 });
                 break;
@@ -56,8 +56,6 @@ class OpnameStocks extends ApiController
 
         }
 
-        $this->error('LOLOS');
-
         // DB::Commit => Before return function!
         $this->DATABASE::commit();
         return response()->json($opname_stock);
@@ -70,7 +68,7 @@ class OpnameStocks extends ApiController
             'opname_stock_items.unit'
         ])->findOrFail($id);
 
-        $opname_stock->setAppends(['is_relationship','has_relationship']);
+        $opname_stock->append(['is_relationship','has_relationship']);
 
         return response()->json($opname_stock);
     }

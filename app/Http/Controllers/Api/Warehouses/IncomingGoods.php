@@ -7,8 +7,6 @@ use App\Http\Controllers\ApiController;
 use App\Filters\Warehouse\IncomingGood as Filters;
 use App\Models\Income\Customer;
 use App\Models\Warehouse\IncomingGood;
-use App\Models\Income\RequestOrder;
-use App\Models\Income\PreDelivery;
 use App\Traits\GenerateNumber;
 
 class IncomingGoods extends ApiController
@@ -24,13 +22,13 @@ class IncomingGoods extends ApiController
 
             case 'datagrid':
                 $incoming_goods = IncomingGood::with(['customer'])->filter($filters)->latest()->get();
-                $incoming_goods->each->setAppends(['is_relationship']);
+                $incoming_goods->each->append(['is_relationship']);
                 break;
 
             default:
                 $incoming_goods = IncomingGood::with(['customer'])->filter($filters)->latest()->collect();
                 $incoming_goods->getCollection()->transform(function($item) {
-                    $item->setAppends(['is_relationship']);
+                    $item->append(['is_relationship']);
                     return $item;
                 });
                 break;
@@ -76,12 +74,11 @@ class IncomingGoods extends ApiController
     {
         $incoming_good = IncomingGood::withTrashed()->with([
             'customer',
-            'request_order',
             'incoming_good_items.item.item_units',
             'incoming_good_items.unit'
         ])->findOrFail($id);
 
-        $incoming_good->setAppends(['is_relationship','has_relationship']);
+        $incoming_good->append(['is_relationship','has_relationship']);
 
         return response()->json($incoming_good);
     }
@@ -218,17 +215,7 @@ class IncomingGoods extends ApiController
         if ($incoming_good->status != "OPEN") $this->error('The data not "OPEN" state, is not allowed to be changed');
 
         foreach ($incoming_good->incoming_good_items as $detail) {
-            // Calculate stock on "validation" Incoming Goods!
-            $to = $incoming_good->transaction == 'RETURN' ? 'RET' : 'FM';
-            $detail->item->transfer($detail, $detail->unit_valid, $to);
-
-            if (strtoupper($incoming_good->order_mode) === 'ACCUMULATE') {
-                $detail->item->transfer($detail, $detail->unit_valid, 'RDO.REG');
-            }
-        }
-
-        if (strtoupper($incoming_good->order_mode) === 'NONE') {
-            $this->storeRequestOrder($incoming_good);
+            $detail->item->transfer($detail, $detail->unit_amount, 'FM');
         }
 
         $incoming_good->status = 'VALIDATED';
@@ -261,25 +248,8 @@ class IncomingGoods extends ApiController
         $rows = $request->incoming_good_items;
         for ($i=0; $i < count($rows); $i++) {
             $row = $rows[$i];
-            $row['valid'] = $row['quantity'];
             $detail = $incoming_good->incoming_good_items()->create($row);
-
-            if (isset($row['request_order_item_id'])) {
-                $request_order_item = $incoming_good->request_order->request_order_items()->find($row['request_order_item_id']);
-                $detail->request_order_item()->associate($request_order_item);
-                $detail->save();
-            }
-
-            $to = $incoming_good->transaction == 'RETURN' ? 'RET' : 'FM';
-            $detail->item->transfer($detail, $detail->unit_valid, $to);
-
-            if (strtoupper($incoming_good->order_mode) === 'ACCUMULATE') {
-                $detail->item->transfer($detail, $detail->unit_valid, 'RDO.REG');
-            }
-        }
-
-        if (strtoupper($incoming_good->order_mode) === 'NONE') {
-            $this->reviseRequestOrder($revise, $incoming_good);
+            $detail->item->transfer($detail, $detail->unit_amount, 'FM');
         }
 
         $incoming_good->status = 'VALIDATED';
@@ -294,139 +264,5 @@ class IncomingGoods extends ApiController
         return response()->json($incoming_good);
     }
 
-    private function reviseRequestOrder($revise, $incoming_good) {
 
-        $exclude_details = collect(request('incoming_good_items'))->map(function ($item) { return $item['id']; });
-
-        $request_order = $incoming_good->request_order;
-
-        $details = $revise->incoming_good_items ?? [];
-        foreach ($details as $detail) {
-            $request_order_item = $detail->request_order_item;
-            $delivery_order_items = (bool) $request_order_item
-                ? $detail->request_order_item->delivery_order_items
-                : [];
-
-            // Rollback All stock!
-            $detail->request_order_item->item->distransfer($detail->request_order_item);
-            // Delete item has Removed!
-            if (!in_array($detail->id, $exclude_details->toArray())) {
-                $delivery_order_items->map(function ($detail) {
-                    if (strtoupper($detail->delivery_order->status) == 'CLOSED') {
-                        $this->error("DATA has Relation SJDO#". $detail->delivery_order->number ."[CLOSED]. REVISION has not allowed!");
-                    }
-                    // Unset Relation detail for detail item removed
-                    $detail->request_order_item()->associate(null);
-                    $detail->save();
-                });
-
-                $detail->request_order_item()->forceDelete();
-            }
-
-            // Unset Relation detail for revision
-            $detail->request_order_item()->associate(null);
-            $detail->save();
-        }
-
-        $details = $incoming_good->incoming_good_items;
-        foreach ($details as $detail) {
-            $request_order_item = $detail->request_order_item;
-
-            $field = collect($detail)->only(['item_id', 'unit_id', 'unit_rate'])->merge(['quantity'=> $detail->valid, 'price'=>0]);
-
-            $request_order_item = $request_order
-                ->request_order_items()
-                ->updateOrCreate(['id'=>$detail->request_order_item_id],$field->toArray());
-            $detail->request_order_item()->associate($request_order_item);
-            $detail->save();
-
-            // if ($request_order_item->unit_amount < $request_order_item->total_delivery_order_item) {
-            //     $this->error("PART[". $request_order_item->item->part_name ."] total unit invalid. REVISION has not allowed!");
-            // }
-
-            $TO = $request_order->transaction == 'RETURN' ? 'RDO.RET' : 'RDO.REG';
-            $detail->request_order_item->item->transfer($detail->request_order_item, $detail->unit_amount, $TO);
-        }
-
-
-        $revise->request_order()->associate(null);
-        $revise->save();
-    }
-
-    private function storeRequestOrder($incoming_good) {
-        $incoming_good = $incoming_good->fresh();
-
-        $mode = $incoming_good->order_mode;
-
-        if (strtoupper($mode) === 'NONE') {
-            $number = $this->getNextRequestOrderNumber($incoming_good->date);
-
-            $model = RequestOrder::create([
-                'number'        => $number,
-                'date'          => $incoming_good->date,
-                'customer_id'   => $incoming_good->customer_id,
-                'reference_number' => $incoming_good->reference_number,
-                'transaction'    => $incoming_good->transaction,
-                'order_mode'    => $incoming_good->order_mode,
-                'description'   => "NONE P/O. AUTO CREATE PO BASED ON INCOMING: $incoming_good->number",
-            ]);
-            $incoming_good->request_order()->associate($model);
-            $incoming_good->save();
-
-            $rows = $incoming_good->incoming_good_items;
-            foreach ($rows as $row) {
-                $fields = collect($row)->only(['item_id', 'unit_id', 'unit_rate'])->merge(['quantity'=>$row['valid'], 'price'=>0])->toArray();
-                $detail = $model->request_order_items()->create($fields);
-
-                $TO = $incoming_good->transaction == 'RETURN' ? 'RDO.RET' : 'RDO.REG';
-                $detail->item->transfer($detail, $detail->unit_amount, $TO);
-
-                $row->request_order_item()->associate($detail);
-                $row->save();
-
-            }
-        }
-    }
-
-    // NOT CREATE PREDELIVERY 07/08
-    private function storePreDelivery($incoming_good) {
-
-        $incoming_good = $incoming_good->fresh();
-
-        if ($incoming_good->order_mode === 'NONE') {
-
-            $number = $this->getNextPreDeliveryNumber($incoming_good->date);
-
-            $model = PreDelivery::create([
-                'number'        => $number,
-                'date'          => $incoming_good->date,
-                'customer_id'   => $incoming_good->customer_id,
-                'customer_name'   => $incoming_good->customer->name,
-                'customer_phone'   => $incoming_good->customer->phone,
-                'customer_address'   => $incoming_good->customer->address,
-
-                'transaction'   => $incoming_good->transaction,
-                'order_mode'    => $incoming_good->order_mode,
-                'plan_begin_date'  => $incoming_good->date,
-                'plan_until_date'  => $incoming_good->date,
-                'reference_number' => $incoming_good->reference_number,
-                'description'   => "NONE P/O. AUTO CREATE PO BASED ON INCOMING: $incoming_good->number",
-            ]);
-
-
-            $incoming_good->pre_delivery_id = $model->id;
-            $incoming_good->save();
-
-            $rows = $incoming_good->incoming_good_items;
-            foreach ($rows as $row) {
-                $fields = collect($row)->only(['item_id', 'unit_id', 'unit_rate', 'quantity'])->toArray();
-                $detail = $model->pre_delivery_items()->create($fields);
-
-                // COMPUTE ITEMSTOCK !!
-                $STOCKIST = $incoming_good->transaction == 'RETURN' ? 'PDO.RET' : 'PDO.REG';
-
-                $detail->item->transfer($detail, $detail->unit_amount, $STOCKIST);
-            }
-        }
-    }
 }

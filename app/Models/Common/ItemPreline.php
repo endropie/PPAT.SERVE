@@ -10,7 +10,7 @@ class ItemPreline extends Model
 
    protected $hidden = ['created_at', 'updated_at'];
 
-   protected $relationships = ['incoming_good_items'];
+   protected $relationships = [];
 
    public function item()
    {

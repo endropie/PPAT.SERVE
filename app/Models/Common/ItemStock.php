@@ -8,18 +8,6 @@ class ItemStock extends Model
 {
    static $stockists = [
       'FM' => 'Fresh Material',
-      'WO' => 'Work Order',
-      'WIP' => 'Work In Process',
-      'FG' => 'Finish Good',
-      'NG' => 'Not Good',
-      'RET' => 'Not Good Return',
-      // 'RDO' => 'Request-DO amounable',
-      // 'PDO' => 'Pre-DO amounable',
-      'VDO' => 'Verification-DO amounable',
-      'PDO.REG' => 'REGULER-PDO amounable', // REGDO
-      'PDO.RET' => 'RETURN-PDO amounable', // RETDO
-      'RDO.REG' => 'REGULER Request-DO amounable',
-      'RDO.RET' => 'RETURN Request-DO amounable',
    ];
 
    protected $fillable = ['item_id', 'stockist', 'total'];

@@ -39,12 +39,13 @@ class OpnameStockItem extends Model
         return $this->belongsTo('App\Models\Reference\Unit');
     }
 
-    public function getQuantityAttribute() {
+    public function getQuantityAttribute()
+    {
         return (double) ($this->final_amount - $this->init_amount);
     }
 
-    public function getUnitAmountAttribute() {
-
+    public function getUnitAmountAttribute()
+    {
         if($this->unit_rate < 0) $this->unit_rate = 0;
 
         return (double) ($this->quantity) * $this->unit_rate;

@@ -2,17 +2,13 @@
 
 namespace App\Http\Controllers\Api\Warehouses;
 
-use App\Filters\Warehouse\OutgoingGood as Filters;
-use App\Http\Requests\Warehouse\OutgoingGood as Request;
+use App\Http\Requests\Warehouse\OutGoingGood as Request;
 use App\Http\Controllers\ApiController;
-use App\Models\Warehouse\OutgoingGood;
-use App\Models\Warehouse\OutgoingGoodVerification;
-use App\Models\Income\RequestOrder;
-use App\Models\Income\RequestOrderItem;
+use App\Filters\Warehouse\OutGoingGood as Filters;
+use App\Models\Warehouse\OutGoingGood;
 use App\Traits\GenerateNumber;
-// use function Safe\substr;
 
-class OutgoingGoods extends ApiController
+class OutGoingGoods extends ApiController
 {
     use GenerateNumber;
 
@@ -20,30 +16,13 @@ class OutgoingGoods extends ApiController
     {
         switch (request('mode')) {
             case 'all':
-                $outgoing_goods = OutgoingGood::filter($filters)->get();
-                break;
-
-            case 'datagrid':
-                $outgoing_goods = OutgoingGood::with(['customer', 'operator'])
-                    ->filter($filters)
-                    ->latest()->get();
-                $outgoing_goods->each->setAppends(['is_relationship']);
+                $outgoing_goods = OutGoingGood::filter($filters)->get();
                 break;
 
             default:
-                $outgoing_goods = OutgoingGood::with([
-                    'operator',
-                    'delivery_orders' => function ($q) {
-                        $q->select(['id', 'outgoing_good_id', 'number', 'revise_number']);
-                    },
-                    'customer' => function ($q) {
-                        $q->select(['id', 'name']);
-                    }
-                ])->filter($filters)
-                    ->latest()->collect();
-
-                $outgoing_goods->getCollection()->transform(function ($item) {
-                    $item->setAppends(['is_relationship']);
+                $outgoing_goods = OutGoingGood::with(['customer'])->filter($filters)->latest()->collect();
+                $outgoing_goods->getCollection()->transform(function($item) {
+                    $item->append('is_relationship');
                     return $item;
                 });
                 break;
@@ -54,245 +33,158 @@ class OutgoingGoods extends ApiController
 
     public function store(Request $request)
     {
+        // DB::beginTransaction => Before the function process!
         $this->DATABASE::beginTransaction();
 
-        if (!$request->number) $request->merge(['number' => $this->getNextOutgoingGoodNumber()]);
+        if (!$request->number) $request->merge([
+            'number'=> $this->getNextOutGoingGoodNumber($request->input('date'))
+        ]);
 
-        $outgoing_good = OutgoingGood::create($request->all());
+        $outgoing_good = OutGoingGood::create($request->all());
 
         $rows = $request->outgoing_good_items;
-
-        if (count($rows) <= 0) abort(501, 'Part detail not found!');
-        for ($i = 0; $i < count($rows); $i++) {
+        for ($i=0; $i < count($rows); $i++) {
             $row = $rows[$i];
+
             // create item row on the incoming Goods updated!
             $detail = $outgoing_good->outgoing_good_items()->create($row);
+            if (!$detail->item->enable) $this->error("PART [". $detail->item->code . "] DISABLED");
 
-            // $TransDO = $outgoing_good->transaction == "RETURN" ? 'PDO.RET' : 'PDO.REG';
-            // $detail->item->transfer($detail, $detail->unit_amount, null, $TransDO);
-            // $detail->item->transfer($detail, $detail->unit_amount, null, 'VDO');
         }
 
-        if ($outgoing_good->transaction == "REGULER" && $outgoing_good->customer->order_mode == "ACCUMULATE")
-        {
-            $this->storeRequestOrder($outgoing_good->fresh());
-        }
-        else {
-            $this->storeDeliveryOrder($outgoing_good->fresh());
-        }
-
-        OutgoingGoodVerification::whereNull('validated_at')
-            ->whereHas('item', function ($query) use ($outgoing_good) {
-                return $query->where('customer_id', $outgoing_good->customer_id);
-            })
-            ->update(['validated_at' => now()]);
-
+        // DB::Commit => Before return function!
         $this->DATABASE::commit();
         return response()->json($outgoing_good);
     }
 
     public function show($id)
     {
-        $outgoing_good = OutgoingGood::with([
+        $outgoing_good = OutGoingGood::withTrashed()->with([
             'customer',
             'outgoing_good_items.item.item_units',
             'outgoing_good_items.unit'
-        ])->withTrashed()->findOrFail($id);
+        ])->findOrFail($id);
 
-        $outgoing_good->setAppends(['has_relationship']);
+        $outgoing_good->append(['is_relationship','has_relationship']);
 
         return response()->json($outgoing_good);
     }
 
-    public function storeRequestOrder($outgoing_good)
+    public function update(Request $request, $id)
     {
+        if(request('mode') === 'validation') return $this->validation($request, $id);
+        if(request('mode') === 'revision') return $this->revision($request, $id);
 
-        $request_order = RequestOrder::where('customer_id', $outgoing_good->customer_id)
-            ->where('order_mode', $outgoing_good->customer->order_mode)
-            ->whereMonth('date', substr($outgoing_good->date, 3, 2))
-            ->whereYear('date', substr($outgoing_good->date, 0, 4))
-            ->latest()->first();
+        $this->DATABASE::beginTransaction();
 
-        if (!$request_order) {
-            $request_order = new RequestOrder;
-            $order_mode = $outgoing_good->customer->order_mode;
+        $outgoing_good = OutGoingGood::findOrFail($id);
 
-            $request_order->date  = $outgoing_good->date;
-            $request_order->customer_id = $outgoing_good->customer_id;
-            $request_order->order_mode   = $order_mode;
-            $request_order->transaction   = 'REGULER';
+        if ($outgoing_good->status != "OPEN") $this->error("[$outgoing_good->number] not 'OPEN' state, is not allowed to be changed");
+        if ($outgoing_good->is_relationship) $this->error("The data has relationships, is not allowed to be changed");
 
-            $begin = \Carbon::parse($outgoing_good->date)->startOfMonth()->format('Y-m-d');
-            $until = \Carbon::parse($outgoing_good->date)->endOfMonth()->format('Y-m-d');
-            $request_order->description   = "ACCUMULATE P/O. $begin - $until";
-            // For model update
-            if (!$request_order->id) {
-                $request_order->number = $this->getNextRequestOrderNumber($outgoing_good->date);
-            }
-            $request_order->save();
+        $outgoing_good->update($request->input());
 
-            // $outgoing_good->request_order_id = $request_order->id;
-            // $outgoing_good->save();
+        // Before Update Force delete incoming goods items
+        $outgoing_good->outgoing_good_items()->forceDelete();
+
+        // Update incoming goods items
+        $rows = $request->outgoing_good_items;
+        for ($i=0; $i < count($rows); $i++) {
+            $row = $rows[$i];
+            // Update or Create detail row
+            $detail = $outgoing_good->outgoing_good_items()->create($row);
+            if (!$detail->item->enable) $this->error("PART [". $detail->item->code . "] DISABLED");
         }
 
-        $delivery_order = $outgoing_good->delivery_orders()->create([
-            'number' => $this->getNextSJDeliveryNumber(),
-            'transaction' =>  $outgoing_good->transaction,
-            'customer_id' => $outgoing_good->customer_id,
-            'customer_name' => $outgoing_good->customer_name,
-            'customer_phone' => $outgoing_good->customer_phone,
-            'customer_address' => $outgoing_good->customer_address,
-            'date' => $outgoing_good->date,
-            'due_date' => $outgoing_good->due_date,
-
-            'operator_id' => $outgoing_good->operator_id,
-            'vehicle_id' => $outgoing_good->vehicle_id,
-            'transfer_rate' => $outgoing_good->transfer_rate,
-        ]);
-
-        $rows = $outgoing_good->outgoing_good_items
-            ->groupBy('item_id')
-            ->map(function ($group) {
-                return [
-                    'item_id' => $group[0]->item_id,
-                    'unit_id' => $group[0]->item->unit_id,
-                    'unit_rate' => 1,
-                    'quantity' => $group->sum('unit_amount'),
-                    'price' => 0,
-                ];
-            });
-
-        foreach ($rows as $row) {
-            $detail = $request_order->request_order_items()->create($row);
-            $delivery_order_item = $delivery_order->delivery_order_items()->create($row);
-            $delivery_order_item->request_order_item()->associate($detail);
-            $delivery_order_item->save();
-        }
-
-        $delivery_order->request_order()->associate($request_order);
-        $delivery_order->save();
-    }
-
-    public function storeDeliveryOrder($outgoing_good)
-    {
-        $list = [];
-        $request_order_items = RequestOrderItem::whereHas('request_order', function ($query) use ($outgoing_good) {
-            return $query->where('status', 'OPEN')
-                ->where('transaction', $outgoing_good->transaction)
-                ->where('customer_id', $outgoing_good->customer_id);
-        })->get();
-
-        $request_order_items = $request_order_items
-            ->filter(function ($x) {
-                return ($x->unit_amount > $x->total_delivery_order_item);
-            })
-            ->map(function ($detail) {
-                $detail->sort_date = $detail->request_order->date;
-                return $detail;
-            })
-            ->sortBy('sort_date');
-
-        $rows = $outgoing_good->outgoing_good_items
-            ->groupBy('item_id')
-            ->map(function ($group) {
-                return $group->sum('unit_amount');
-            });
-
-        foreach ($request_order_items as $detail) {
-            if (isset($rows[$detail->item_id])) {
-
-                $max_amount = $rows[$detail->item_id];
-                $unit_amount = $detail->unit_amount - $detail->total_delivery_order_item;
-                $unit_amount = ($max_amount < $unit_amount ? $max_amount : $unit_amount);
-
-                $rows[$detail->item_id] -= $unit_amount;
-
-                if ($unit_amount > 0) {
-                    $RO = $detail->request_order_id;
-                    $DTL = $detail->id;
-
-                    $list[$RO][$DTL] = [
-                        'item_id' => $detail->item_id,
-                        'unit_id' => $detail->item->unit_id,
-                        'unit_rate' => 1,
-                        'quantity' => $unit_amount
-                    ];
-                }
-            }
-        }
-
-        foreach ($list as $RO => $rows) {
-            $request_order = RequestOrder::findOrFail($RO);
-
-            $delivery_order = $outgoing_good->delivery_orders()->create([
-                'number' => $this->getNextSJDeliveryNumber(),
-                'transaction' =>  $outgoing_good->transaction,
-                'customer_id' => $outgoing_good->customer_id,
-                'customer_name' => $outgoing_good->customer_name,
-                'customer_phone' => $outgoing_good->customer_phone,
-                'customer_address' => $outgoing_good->customer_address,
-                'date' => $outgoing_good->date,
-                'due_date' => $outgoing_good->due_date,
-
-                'operator_id' => $outgoing_good->operator_id,
-                'vehicle_id' => $outgoing_good->vehicle_id,
-                'transfer_rate' => $outgoing_good->transfer_rate,
-            ]);
-
-            foreach ($rows as $DTL => $row) {
-
-                $detail = $delivery_order->delivery_order_items()->create($row);
-                $detail->item->transfer($detail, $detail->unit_amount, null, 'FG');
-
-                $TransDO = $outgoing_good->transaction == "RETURN" ? 'PDO.RET' : 'PDO.REG';
-                $detail->item->transfer($detail, $detail->unit_amount, null, $TransDO);
-                $detail->item->transfer($detail, $detail->unit_amount, null, 'VDO');
-
-                $detail->request_order_item_id = $DTL;
-                $detail->save();
-            }
-
-            $delivery_order->request_order()->associate($request_order);
-            $delivery_order->save();
-
-        }
+        $this->DATABASE::commit();
+        return response()->json($outgoing_good);
     }
 
     public function destroy($id)
     {
+        // DB::beginTransaction => Before the function process!
         $this->DATABASE::beginTransaction();
 
-        $outgoing_good = OutgoingGood::findOrFail($id);
+        $outgoing_good = OutGoingGood::findOrFail($id);
 
         $mode = strtoupper(request('mode') ?? 'DELETED');
-        if ($outgoing_good->is_relationship) $this->error("The data has RELATIONSHIP, is not allowed to be $mode");
-        if ($mode == "DELETED" && $outgoing_good->status != 'OPEN') $this->error("The data $outgoing_good->status state, is not allowed to be $mode");
+        if($outgoing_good->is_relationship) $this->error("The data has RELATIONSHIP, is not allowed to be $mode");
+        if($mode == "DELETED" && $outgoing_good->status != 'OPEN') $this->error("The data $outgoing_good->status state, is not allowed to be $mode");
 
-        if ($mode == 'VOID') {
+        if($mode == 'VOID') {
             $outgoing_good->status = "VOID";
             $outgoing_good->save();
         }
 
-        // foreach ($outgoing_good->request_order_items as $detail) {
-        //     if ($detail->request_order->status != "OPEN") $this->error("The data has RELATIONSHIP [#" . $detail->request_order->status . "], is not allowed to be $mode");
-        //     $detail->forceDelete();
-        //     $request_order = RequestOrder::find($detail->request_order_id);
-        //     if ($request_order->request_order_items->count() == 0) {
-        //         $request_order->status = 'VOID';
-        //         $request_order->save();
-        //         $request_order->delete();
-        //     }
-        // }
-
-        // ????? SCHEMA 1: REMOVE DETAIL & CALCULATE BACK ITEMSTOCK
-        foreach ($outgoing_good->outgoing_good_items as $detail) {
-            $detail->item->distransfer($detail);
-            $detail->delete();
+        if($details = $outgoing_good->outgoing_good_items) {
+            foreach ($details as $detail) {
+                $detail->item->distransfer($detail);
+                $detail->delete();
+            }
         }
 
         $outgoing_good->delete();
 
+        // DB::Commit => Before return function!
         $this->DATABASE::commit();
         return response()->json(['success' => true]);
+    }
+
+    public function validation($request, $id)
+    {
+        // DB::beginTransaction => Before the function process!
+        $this->DATABASE::beginTransaction();
+
+        $outgoing_good = OutGoingGood::findOrFail($id);
+
+        if ($outgoing_good->status != "OPEN") $this->error("[$outgoing_good->number] has not 'OPEN' state, is not allowed to be validated");
+
+        foreach ($outgoing_good->outgoing_good_items as $detail) {
+            // Calculate stock on "validation" Incoming Goods!
+            $detail->item->transfer($detail, $detail->unit_amount, null, 'FM');
+        }
+
+        $outgoing_good->status = 'VALIDATED';
+        $outgoing_good->save();
+
+        $this->DATABASE::commit();
+        return response()->json($outgoing_good);
+    }
+
+    public function revision($request, $id)
+    {
+        $this->DATABASE::beginTransaction();
+
+        $revise = OutGoingGood::findOrFail($id);
+        $details = $revise->outgoing_good_items;
+        foreach ($details as $detail) {
+            $detail->item->distransfer($detail);
+            $detail->delete();
+        }
+
+        if($request->number) {
+            $max = (int) OutGoingGood::where('number', $request->number)->max('revise_number');
+            $request->merge(['revise_number' => ($max + 1)]);
+        }
+
+        $outgoing_good = OutGoingGood::create($request->all());
+
+        $rows = $request->outgoing_good_items;
+        for ($i=0; $i < count($rows); $i++) {
+            $row = $rows[$i];
+            $detail = $outgoing_good->outgoing_good_items()->create($row);
+            $detail->item->transfer($detail, $detail->unit_amount, null, 'FM');
+        }
+
+        $outgoing_good->status = 'VALIDATED';
+        $outgoing_good->save();
+
+        $revise->status = 'REVISED';
+        $revise->revise_id = $outgoing_good->id;
+        $revise->save();
+        $revise->delete();
+
+        $this->DATABASE::commit();
+        return response()->json($outgoing_good);
     }
 }

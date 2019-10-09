@@ -18,8 +18,13 @@ class Employee extends Model
     protected $relationships = [
         'work_productions',
         'packings',
-        'outgoing_goods'
+        'outgoing_goods',
+        'user'
     ];
+
+    public function user () {
+        return $this->belongsTo('App\Models\Auth\User');
+    }
 
     public function department () {
         return $this->belongsTo('App\Models\Reference\Department');
@@ -31,14 +36,6 @@ class Employee extends Model
 
     public function line () {
         return $this->belongsTo('App\Models\Reference\line');
-    }
-
-    public function work_productions() {
-        return $this->hasMany('App\Models\Factory\WorkProduction', 'operator_id');
-    }
-
-    public function packings() {
-        return $this->hasMany('App\Models\Factory\Packing', 'operator_id');
     }
 
     public function outgoing_goods() {

@@ -16,9 +16,7 @@ class CreateOutgoingGoodsTables extends Migration
         Schema::create('outgoing_goods', function (Blueprint $table) {
             $table->increments('id');
             $table->string('number');
-            $table->enum('transaction', ['REGULER', 'RETURN']);
             $table->date('date')->nullable();
-            $table->date('due_date')->nullable();
 
             $table->unsignedInteger('customer_id');
             $table->string('customer_name')->nullable();
@@ -26,13 +24,13 @@ class CreateOutgoingGoodsTables extends Migration
             $table->text('customer_address')->nullable();
 
             $table->unsignedInteger('vehicle_id')->nullable();
-            $table->tinyInteger('transport_rate')->nullable();
-            $table->unsignedInteger('operator_id')->nullable();
+            $table->tinyInteger('rit')->nullable();
 
             $table->text('description')->nullable();
             $table->string('status')->default('OPEN');
 
-            $table->unsignedInteger('request_order_id')->nullable();
+            $table->integer('revise_id')->nullable();
+            $table->integer('revise_number')->nullable();
 
             $table->unsignedInteger('created_by')->nullable();
             $table->timestamps();
@@ -51,21 +49,6 @@ class CreateOutgoingGoodsTables extends Migration
             $table->timestamps();
             $table->softDeletes();
         });
-
-        Schema::create('outgoing_good_verifications', function (Blueprint $table) {
-            $table->increments('id');
-            $table->date('date');
-            $table->integer('item_id')->unsigned();
-            $table->integer('unit_id')->unsigned();
-            $table->float('unit_rate')->default(1);
-            $table->float('quantity');
-
-            $table->integer('pre_delivery_item_id')->unsigned();
-
-            $table->dateTime('validated_at')->nullable();
-            $table->timestamps();
-            $table->softDeletes();
-        });
     }
 
     /**
@@ -77,6 +60,5 @@ class CreateOutgoingGoodsTables extends Migration
     {
         Schema::dropIfExists('outgoing_goods');
         Schema::dropIfExists('outgoing_good_items');
-        Schema::dropIfExists('outgoing_good_verifications');
     }
 }
