@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers\Api\Warehouses;
 
-use App\Http\Requests\Warehouse\OutGoingGood as Request;
+use App\Http\Requests\Warehouse\OutgoingGood as Request;
 use App\Http\Controllers\ApiController;
-use App\Filters\Warehouse\OutGoingGood as Filters;
-use App\Models\Warehouse\OutGoingGood;
+use App\Filters\Warehouse\OutgoingGood as Filters;
+use App\Models\Warehouse\OutgoingGood;
 use App\Traits\GenerateNumber;
 
-class OutGoingGoods extends ApiController
+class OutgoingGoods extends ApiController
 {
     use GenerateNumber;
 
@@ -16,11 +16,11 @@ class OutGoingGoods extends ApiController
     {
         switch (request('mode')) {
             case 'all':
-                $outgoing_goods = OutGoingGood::filter($filters)->get();
+                $outgoing_goods = OutgoingGood::filter($filters)->get();
                 break;
 
             default:
-                $outgoing_goods = OutGoingGood::with(['customer'])->filter($filters)->latest()->collect();
+                $outgoing_goods = OutgoingGood::with(['customer'])->filter($filters)->latest()->collect();
                 $outgoing_goods->getCollection()->transform(function($item) {
                     $item->append('is_relationship');
                     return $item;
@@ -37,10 +37,10 @@ class OutGoingGoods extends ApiController
         $this->DATABASE::beginTransaction();
 
         if (!$request->number) $request->merge([
-            'number'=> $this->getNextOutGoingGoodNumber($request->input('date'))
+            'number'=> $this->getNextOutgoingGoodNumber($request->input('date'))
         ]);
 
-        $outgoing_good = OutGoingGood::create($request->all());
+        $outgoing_good = OutgoingGood::create($request->all());
 
         $rows = $request->outgoing_good_items;
         for ($i=0; $i < count($rows); $i++) {
@@ -59,7 +59,7 @@ class OutGoingGoods extends ApiController
 
     public function show($id)
     {
-        $outgoing_good = OutGoingGood::withTrashed()->with([
+        $outgoing_good = OutgoingGood::withTrashed()->with([
             'customer',
             'outgoing_good_items.item.item_units',
             'outgoing_good_items.unit'
@@ -77,7 +77,7 @@ class OutGoingGoods extends ApiController
 
         $this->DATABASE::beginTransaction();
 
-        $outgoing_good = OutGoingGood::findOrFail($id);
+        $outgoing_good = OutgoingGood::findOrFail($id);
 
         if ($outgoing_good->status != "OPEN") $this->error("[$outgoing_good->number] not 'OPEN' state, is not allowed to be changed");
         if ($outgoing_good->is_relationship) $this->error("The data has relationships, is not allowed to be changed");
@@ -105,7 +105,7 @@ class OutGoingGoods extends ApiController
         // DB::beginTransaction => Before the function process!
         $this->DATABASE::beginTransaction();
 
-        $outgoing_good = OutGoingGood::findOrFail($id);
+        $outgoing_good = OutgoingGood::findOrFail($id);
 
         $mode = strtoupper(request('mode') ?? 'DELETED');
         if($outgoing_good->is_relationship) $this->error("The data has RELATIONSHIP, is not allowed to be $mode");
@@ -135,7 +135,7 @@ class OutGoingGoods extends ApiController
         // DB::beginTransaction => Before the function process!
         $this->DATABASE::beginTransaction();
 
-        $outgoing_good = OutGoingGood::findOrFail($id);
+        $outgoing_good = OutgoingGood::findOrFail($id);
 
         if ($outgoing_good->status != "OPEN") $this->error("[$outgoing_good->number] has not 'OPEN' state, is not allowed to be validated");
 
@@ -155,7 +155,7 @@ class OutGoingGoods extends ApiController
     {
         $this->DATABASE::beginTransaction();
 
-        $revise = OutGoingGood::findOrFail($id);
+        $revise = OutgoingGood::findOrFail($id);
         $details = $revise->outgoing_good_items;
         foreach ($details as $detail) {
             $detail->item->distransfer($detail);
@@ -163,11 +163,11 @@ class OutGoingGoods extends ApiController
         }
 
         if($request->number) {
-            $max = (int) OutGoingGood::where('number', $request->number)->max('revise_number');
+            $max = (int) OutgoingGood::where('number', $request->number)->max('revise_number');
             $request->merge(['revise_number' => ($max + 1)]);
         }
 
-        $outgoing_good = OutGoingGood::create($request->all());
+        $outgoing_good = OutgoingGood::create($request->all());
 
         $rows = $request->outgoing_good_items;
         for ($i=0; $i < count($rows); $i++) {
