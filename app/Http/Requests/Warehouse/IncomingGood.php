@@ -24,19 +24,20 @@ class IncomingGood extends Request
         }
         else $id = null;
 
-        // For "RETURN" Transations, ORDER MODE must be "NONE"
         if ($this->input('transaction') == 'RETURN') $this->merge(['order_mode' => 'NONE']);
 
         $in_customer = Rule::in(\App\Models\Income\Customer::where('id', request('customer_id'))->get()->pluck('id'));
         $in_customer_item = Rule::in(\App\Models\Common\Item::where('customer_id', request('customer_id'))->get()->pluck('id'));
 
+        $number = ($id ? 'required|' : '') .'unique:incoming_goods,number,'. $id .',id,revise_number,'. $this->get('revise_number');
+        $indexed = ($id ? 'required|' : '') .'unique:incoming_goods,indexed_number,'. $id;
+
         return [
-            'number' => ($id ? 'required|' : '') .'unique:incoming_goods,number,'. $id .',id,revise_number,'. $this->get('revise_number'),
-            'indexed_number' => ($id ? 'required|' : '') .'unique:incoming_goods,number,'. $id .',id,revise_number,'. $this->get('revise_number'),
+            'number' => $number,
+            'indexed_number' => $indexed,
             'customer_id' => ['required', $in_customer],
             'date' => 'required',
             'time' => 'required',
-            'transaction' => 'required|in:REGULER,RETURN',
 
             'incoming_good_items.*.quantity' => 'required',
             'incoming_good_items.*.unit_id' => 'required',

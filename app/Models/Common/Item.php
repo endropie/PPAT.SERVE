@@ -13,11 +13,19 @@ class Item extends Model
 
     protected $fillable = [
         'code', 'customer_id', 'brand_id', 'specification_id', 'part_name', 'part_alias',  'part_number',
-        'packing_duration', 'sa_area', 'weight', 'number_hanger', 'price',
+        'load_type', 'load_capacity', 'packing_duration', 'sa_dm', 'weight', 'price',
         'category_item_id', 'type_item_id', 'size_id', 'unit_id', 'description', 'enable'
     ];
 
     protected $appends = ['customer_code', 'totals'];
+
+    protected $casts = [
+        'load_capacity' => 'double',
+        'packing_duration' => 'double',
+        'sa_dm' => 'double',
+        'weight' => 'double',
+        'price' => 'double'
+    ];
 
     protected $hidden = ['created_at', 'updated_at'];
 

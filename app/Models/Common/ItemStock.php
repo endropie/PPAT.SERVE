@@ -7,14 +7,12 @@ use App\Models\Model;
 class ItemStock extends Model
 {
    static $stockists = [
-      'FM' => 'Fresh Material',
+      'REG' => 'REGULER',
+      'RET' => 'RETURN',
+      'NG' => 'NOT GOOD'
    ];
 
    protected $fillable = ['item_id', 'stockist', 'total'];
-
-   protected $appends = [
-      // 'stockist_name'
-   ];
 
    protected $hidden = ['created_at', 'updated_at'];
 

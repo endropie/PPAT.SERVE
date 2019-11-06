@@ -15,6 +15,12 @@ class OpnameStockItem extends Model
 
     protected $appends = ['quantity', 'unit_amount'];
 
+    protected $casts = [
+        'unit_rate' => 'double',
+        'init_amount' => 'double',
+        'final_amount' => 'double'
+    ];
+
     protected $hidden = ['created_at', 'updated_at'];
 
     protected $relationships = [];

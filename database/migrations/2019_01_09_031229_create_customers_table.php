@@ -28,13 +28,13 @@ class CreateCustomersTable extends Migration
 
             $table->string('npwp')->nullable();
             $table->string('pkp')->nullable();
-           $table->string('bank_account')->nullable();
+            $table->string('bank_account')->nullable();
 
             $table->boolean('with_tax')->default(0);
             $table->boolean('with_pph')->default(0);
-            $table->float('tax')->default(0);
-            $table->float('pph_service')->default(0);
-            $table->float('pph_material')->default(0);
+            $table->decimal('tax')->default(0);
+            $table->decimal('pph_service')->default(0);
+            $table->decimal('pph_material')->default(0);
 
             $table->string('invoice_mode')->nullable();
             $table->string('delivery_mode')->nullable();

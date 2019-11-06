@@ -11,7 +11,11 @@ class ItemStockable extends Model
 
     protected $fillable = ['item_id', 'stockist', 'unit_amount', 'base_type', 'base_id'];
 
-    // protected $hidden = ['created_at', 'updated_at'];
+    protected $casts = [
+        'unit_amount' => 'double',
+    ];
+
+    protected $hidden = ['created_at', 'updated_at'];
 
     public function item()
     {

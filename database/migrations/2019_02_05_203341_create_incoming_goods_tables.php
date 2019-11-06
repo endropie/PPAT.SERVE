@@ -16,7 +16,6 @@ class CreateIncomingGoodsTables extends Migration
         Schema::create('incoming_goods', function (Blueprint $table) {
             $table->increments('id');
             $table->string('number');
-            $table->string('registration');
             $table->date('date');
             $table->time('time');
 
@@ -45,11 +44,13 @@ class CreateIncomingGoodsTables extends Migration
             $table->integer('incoming_good_id');
 
             $table->integer('item_id');
-            $table->float('quantity');
+            $table->decimal('quantity');
             $table->integer('unit_id');
-            $table->float('unit_rate')->default(1);
+            $table->decimal('unit_rate')->default(1);
 
+            $table->boolean('is_valid')->nullable();
             $table->text('note')->nullable();
+
             $table->timestamps();
             $table->softDeletes();
         });

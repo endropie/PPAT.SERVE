@@ -215,7 +215,8 @@ class IncomingGoods extends ApiController
         if ($incoming_good->status != "OPEN") $this->error('The data not "OPEN" state, is not allowed to be changed');
 
         foreach ($incoming_good->incoming_good_items as $detail) {
-            $detail->item->transfer($detail, $detail->unit_amount, 'FM');
+            $stockist = ($incoming_good->transaction == 'RETURN') ? 'RET' : 'REG';
+            $detail->item->transfer($detail, $detail->unit_amount, $stockist);
         }
 
         $incoming_good->status = 'VALIDATED';
@@ -249,7 +250,9 @@ class IncomingGoods extends ApiController
         for ($i=0; $i < count($rows); $i++) {
             $row = $rows[$i];
             $detail = $incoming_good->incoming_good_items()->create($row);
-            $detail->item->transfer($detail, $detail->unit_amount, 'FM');
+
+            $stockist = ($incoming_good->transaction == 'RETURN') ? 'RET' : 'REG';
+            $detail->item->transfer($detail, $detail->unit_amount, $stockist);
         }
 
         $incoming_good->status = 'VALIDATED';

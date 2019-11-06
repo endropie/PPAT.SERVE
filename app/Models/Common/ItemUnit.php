@@ -6,20 +6,22 @@ use App\Models\Model;
 
 class ItemUnit extends Model
 {
-   protected $fillable = ['unit_id', 'rate'];
 
-   protected $hidden = ['created_at', 'updated_at'];
+    protected $fillable = ['unit_id', 'rate'];
 
-   protected $relationships = [];
+    protected $hidden = ['created_at', 'updated_at'];
 
-   public function item()
-   {
-      return $this->belongsTo('App\Models\Common\Item');
-   }
+    protected $casts = [
+        'rate' => 'double'
+    ];
 
-   public function unit()
-   {
-      return $this->belongsTo('App\Models\Reference\Unit');
-   }
+    public function item()
+    {
+        return $this->belongsTo('App\Models\Common\Item');
+    }
+
+    public function unit()
+    {
+        return $this->belongsTo('App\Models\Reference\Unit');
+    }
 }
- 

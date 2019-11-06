@@ -10,10 +10,16 @@ class IncomingGoodItem extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'item_id', 'quantity', 'unit_id', 'unit_rate', 'valid', 'note'
+        'item_id', 'quantity', 'unit_id', 'unit_rate', 'note', 'is_valid'
     ];
 
     protected $appends = ['unit_amount'];
+
+    protected $casts = [
+        'quantity' => 'double',
+        'unit_rate' => 'double',
+        'is_valid' => 'boolean',
+    ];
 
     protected $hidden = ['created_at', 'updated_at'];
 
@@ -45,13 +51,5 @@ class IncomingGoodItem extends Model
         if($this->unit_rate <= 0) return false;
 
         return (double) $this->quantity * $this->unit_rate;
-    }
-
-    public function getUnitValidAttribute() {
-
-        // return false when rate is not valid
-        if($this->unit_rate <= 0) return false;
-
-        return (double) $this->valid * $this->unit_rate;
     }
 }

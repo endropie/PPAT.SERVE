@@ -23,15 +23,16 @@ class OutgoingGood extends Request
         }
         else $id = null;
 
+        $number = ($id ? 'required|string|' : '') .'max:191|unique:outgoing_goods,NULL,' . $id;
+
         return [
-            'number' => ($id ? 'required|string|' : '') .'max:191|unique:outgoing_goods,NULL,' . $id,
+            'number' => $number,
             'date' => 'required',
             'time' => 'required',
             'customer_id' => 'required',
 
-            'shipdelivery_items.*.item_id' => 'required',
-
-            'shipdelivery_items' =>
+            'outgoing_good_items.*.item_id' => 'required',
+            'outgoing_good_items' =>
             function ($attribute, $value, $fail) {
                 if (sizeof($value) == 0) {
                     $fail('Delivery-Items must be select min. 1 item production.');

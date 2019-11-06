@@ -140,8 +140,9 @@ class OutgoingGoods extends ApiController
         if ($outgoing_good->status != "OPEN") $this->error("[$outgoing_good->number] has not 'OPEN' state, is not allowed to be validated");
 
         foreach ($outgoing_good->outgoing_good_items as $detail) {
+            $stockist = ($outgoing_good->transaction == 'RETURN') ? 'RET' : 'REG';
             // Calculate stock on "validation" Incoming Goods!
-            $detail->item->transfer($detail, $detail->unit_amount, null, 'FM');
+            $detail->item->transfer($detail, $detail->unit_amount, null, $stockist);
         }
 
         $outgoing_good->status = 'VALIDATED';
@@ -173,7 +174,9 @@ class OutgoingGoods extends ApiController
         for ($i=0; $i < count($rows); $i++) {
             $row = $rows[$i];
             $detail = $outgoing_good->outgoing_good_items()->create($row);
-            $detail->item->transfer($detail, $detail->unit_amount, null, 'FM');
+
+            $stockist = ($outgoing_good->transaction == 'RETURN') ? 'RET' : 'REG';
+            $detail->item->transfer($detail, $detail->unit_amount, null, $stockist);
         }
 
         $outgoing_good->status = 'VALIDATED';

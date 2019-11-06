@@ -14,6 +14,12 @@ class ForecastItem extends Model
 
     protected $appends = ['unit_amount'];
 
+    protected $casts = [
+        'quantity' => 'double',
+        'unit_rate' => 'double',
+        'price' => 'double'
+    ];
+
     protected $hidden = ['created_at', 'updated_at'];
 
     protected $relationships = [];

@@ -36,11 +36,11 @@ class CreateOpnameStocksTables extends Migration
 
             $table->integer('item_id');
             $table->integer('unit_id');
-            $table->float('unit_rate')->default(1);
+            $table->decimal('unit_rate')->default(1);
 
             $table->string('stockist');
-            $table->float('init_amount');
-            $table->float('final_amount');
+            $table->decimal('init_amount');
+            $table->decimal('final_amount');
 
             $table->timestamps();
             $table->softDeletes();

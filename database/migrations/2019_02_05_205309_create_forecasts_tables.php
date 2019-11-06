@@ -35,9 +35,9 @@ class CreateForecastsTables extends Migration
 
             $table->unsignedInteger('item_id');
             $table->unsignedInteger('unit_id');
-            $table->float('unit_rate')->default(1);
-            $table->float('quantity');
-            $table->float('price')->default(0);
+            $table->decimal('unit_rate')->default(1);
+            $table->decimal('quantity');
+            $table->decimal('price')->default(0);
             $table->string('note')->nullable();
 
             $table->timestamps();

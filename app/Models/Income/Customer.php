@@ -16,6 +16,12 @@ class Customer extends Model
 
     protected $appends = [ 'address_raw' ];
 
+    protected $casts = [
+        'tax' => 'double',
+        'pph_material' => 'double',
+        'pph_service' => 'double'
+    ];
+
     protected $hidden = ['created_at', 'updated_at'];
 
     protected $relationships = ['items'];

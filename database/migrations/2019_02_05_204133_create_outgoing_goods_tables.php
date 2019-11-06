@@ -23,6 +23,7 @@ class CreateOutgoingGoodsTables extends Migration
             $table->string('customer_phone')->nullable();
             $table->text('customer_address')->nullable();
 
+            $table->enum('transaction', ['REGULER', 'RETURN']);
             $table->unsignedInteger('vehicle_id')->nullable();
             $table->tinyInteger('rit')->nullable();
 
@@ -43,8 +44,8 @@ class CreateOutgoingGoodsTables extends Migration
 
             $table->unsignedInteger('item_id');
             $table->unsignedInteger('unit_id');
-            $table->float('unit_rate')->default(1);
-            $table->float('quantity');
+            $table->decimal('unit_rate')->default(1);
+            $table->decimal('quantity');
 
             $table->timestamps();
             $table->softDeletes();

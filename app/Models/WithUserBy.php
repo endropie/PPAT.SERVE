@@ -1,8 +1,6 @@
 <?php
 namespace App\Models;
 
-use function GuzzleHttp\json_decode;
-
 trait WithUserBy
 {
     public function __construct(array $attributes = []) {
@@ -13,9 +11,11 @@ trait WithUserBy
 	{
 		static::creating(function ($model)
         {
-            $model->created_by = \Auth::user()->id ?? null;
+            if ($user = auth()->user()) {
+                $model->created_by = $user->id ?? null;
+            }
             return $model;
         });
-	}
 
+	}
 }
