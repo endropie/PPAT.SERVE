@@ -33,12 +33,10 @@ class Basic extends Seeder
     {
         DB::table('sizes')->truncate();
 
-		Size::create(['id'=> 1,'code'=>'XS','name'=>'X-Small']);
-		Size::create(['id'=> 2,'code'=>'S','name'=>'Small']);
-		Size::create(['id'=> 3,'code'=>'M','name'=>'Middle']);
-		Size::create(['id'=> 4,'code'=>'L','name'=>'large']);
-		Size::create(['id'=> 5,'code'=>'XL','name'=>'X-Large']);
-		Size::create(['id'=> 6,'code'=>'XXL','name'=>'XX-Large']);
+		Size::create(['id'=> 1,'code'=>'S','name'=>'Small']);
+		Size::create(['id'=> 2,'code'=>'M','name'=>'Medium']);
+		Size::create(['id'=> 3,'code'=>'L','name'=>'large']);
+		Size::create(['id'=> 4,'code'=>'XL','name'=>'X-Large']);
 
 	}
 
@@ -48,11 +46,6 @@ class Basic extends Seeder
 
 		Unit::create(['id'=> 1,'code'=>strtoupper('Pcs'),'name'=>'Pcs']);
 		Unit::create(['id'=> 2,'code'=>strtoupper('Kg'),'name'=>'KiloGram']);
-		Unit::create(['id'=> 3,'code'=>strtoupper('dm'),'name'=>'Decimeter']);
-		Unit::create(['id'=> 4,'code'=>strtoupper('brl'),'name'=>'Barel']);
-		Unit::create(['id'=> 5,'code'=>strtoupper('ltr'),'name'=>'Liter']);
-		Unit::create(['id'=> 6,'code'=>strtoupper('mtr'),'name'=>'Meter']);
-		Unit::create(['id'=> 7,'code'=>strtoupper('ton'),'name'=>'Ton']);
 
     }
 
@@ -147,6 +140,7 @@ class Basic extends Seeder
             'incoming-goods' => ['c','r','u','d','validation','revision','void'],
             'outgoing-goods' => ['c','r','u','d','validation','revision','void'],
             'opname-stocks' => ['c','r','u','d','validation','revision','void'],
+            'transfer-stocks' => ['c','r','u','d','validation','revision','void'],
 			// Reference
 			'brands'		=> ['c','r','u','d'],
 			'colors' => ['c','r','u','d'],
@@ -166,10 +160,15 @@ class Basic extends Seeder
 
 		$roles = [
 			'auth'	    => ['users', 'roles', 'permissions'],
-			'common'    => ['items', 'employees'],
-            'marketing' => ['customers', 'forecasts'],
+			'common'    => ['items', 'employees', 'customers'],
 
-            'user' => ['incoming-goods', 'outgoing-goods', 'opname-stocks'],
+            'user' => [
+                'forecasts',
+                'incoming-goods',
+                'outgoing-goods',
+                'opname-stocks',
+                'transfer-stocks'
+            ],
 
 			'reference' => [
 				'brands', 'colors', 'lines', 'sizes',

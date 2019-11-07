@@ -54,8 +54,9 @@ Route::prefix('v1')->namespace('Api')->group(function() {
 
         Route::prefix('warehouses')->name('warehouses.')->group(function () {
             Route::apiResource('incoming-goods', 'Warehouses\IncomingGoods');
-            Route::apiResource('opname-stocks', 'Warehouses\OpnameStocks');
             Route::apiResource('outgoing-goods', 'Warehouses\OutgoingGoods');
+            Route::apiResource('opname-stocks', 'Warehouses\OpnameStocks');
+            Route::apiResource('transfer-stocks', 'Warehouses\TransferStocks');
         });
 
         Route::prefix('references')->name('references.')->group(function () {

@@ -7,7 +7,7 @@ trait GenerateNumber
     {
         $modul = 'forecast';
         $digit = (int) setting()->get("$modul.number_digit", 5);
-        $prefix = $this->prefixParser($modul);
+        $prefix = $this->prefixParser($modul, 'FC');
         $prefix = $this->dateParser($prefix, $date);
 
         $next = \App\Models\Income\Forecast::withTrashed()->where('number','LIKE', $prefix.'%')->max('number');
@@ -23,7 +23,7 @@ trait GenerateNumber
     {
         $modul = 'incoming_good';
         $digit = (int) setting()->get("$modul.number_digit", 5);
-        $prefix = $this->prefixParser($modul);
+        $prefix = $this->prefixParser($modul, 'IMP');
         $prefix = $this->dateParser($prefix, $date);
 
         $next = \App\Models\Warehouse\IncomingGood::withTrashed()->where('number','LIKE', $prefix.'%')->max('number');
@@ -56,27 +56,11 @@ trait GenerateNumber
         return $number;
     }
 
-    public function getNextOpnameStockNumber($date = null)
-    {
-        $modul = 'opname_stock';
-        $digit = (int) setting()->get("$modul.number_digit", 5);
-        $prefix = $this->prefixParser($modul);
-        $prefix = $this->dateParser($prefix, $date);
-
-        $next = \App\Models\Warehouse\IncomingGood::withTrashed()->where('number','LIKE', $prefix.'%')->max('number');
-        $next = $next ? (int) str_replace($prefix,'', $next) : 0;
-        $next++;
-
-        $number = $prefix . str_pad($next, $digit, '0', STR_PAD_LEFT);
-
-        return $number;
-    }
-
     public function getNextOutgoingGoodNumber($date = null)
     {
         $modul = 'outgoing_good';
         $digit = (int) setting()->get("$modul.number_digit", 5);
-        $prefix = $this->prefixParser($modul);
+        $prefix = $this->prefixParser($modul, 'OMP');
         $prefix = $this->dateParser($prefix, $date);
 
         $next = \App\Models\Warehouse\OutgoingGood::withTrashed()->where('number','LIKE', $prefix.'%')->max('number');
@@ -88,15 +72,49 @@ trait GenerateNumber
         return $number;
     }
 
-    protected function prefixParser($modul, $prefix = '')
+    public function getNextOpnameStockNumber($date = null)
     {
-        if (setting()->get("$modul.number_prefix")) $prefix .= setting()->get("$modul.number_prefix");
+        $modul = 'opname_stock';
+        $digit = (int) setting()->get("$modul.number_digit", 5);
+        $prefix = $this->prefixParser($modul, 'STO');
+        $prefix = $this->dateParser($prefix, $date);
+
+        $next = \App\Models\Warehouse\IncomingGood::withTrashed()->where('number','LIKE', $prefix.'%')->max('number');
+        $next = $next ? (int) str_replace($prefix,'', $next) : 0;
+        $next++;
+
+        $number = $prefix . str_pad($next, $digit, '0', STR_PAD_LEFT);
+
+        return $number;
+    }
+
+
+
+    public function getNextTransferStockNumber($date = null)
+    {
+        $modul = 'transfer_stock';
+        $digit = (int) setting()->get("$modul.number_digit", 5);
+        $prefix = $this->prefixParser($modul, 'STT');
+        $prefix = $this->dateParser($prefix, $date);
+
+        $next = \App\Models\Warehouse\TransferStock::withTrashed()->where('number','LIKE', $prefix.'%')->max('number');
+        $next = $next ? (int) str_replace($prefix,'', $next) : 0;
+        $next++;
+
+        $number = $prefix . str_pad($next, $digit, '0', STR_PAD_LEFT);
+
+        return $number;
+    }
+
+    protected function prefixParser($modul, $prefix = '', $interval = '{Y}')
+    {
+        if (setting()->get("$modul.number_prefix")) $prefix .= setting()->get("$modul.number_prefix", $prefix);
         if (strlen($prefix) > 0) $prefix .= setting()->get("general.prefix_separator",'/');
 
-        if (setting()->get("$modul.number_interval")) $prefix .= setting()->get("$modul.number_interval");
-        if (strlen($prefix) > 0) $prefix .= setting()->get("general.prefix_separator",'/');
+        if (setting()->get("$modul.number_interval")) $interval = setting()->get("$modul.number_interval", $interval);
+        if (strlen($interval) > 0) $interval .= setting()->get("general.prefix_separator",'/');
 
-        return $prefix;
+        return $prefix . $interval;
     }
 
     protected function dateParser($str, $date)
