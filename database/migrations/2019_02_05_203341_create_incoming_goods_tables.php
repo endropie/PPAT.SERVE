@@ -47,9 +47,8 @@ class CreateIncomingGoodsTables extends Migration
             $table->decimal('quantity');
             $table->integer('unit_id');
             $table->decimal('unit_rate')->default(1);
-
+            $table->string('note')->nullable();
             $table->boolean('is_valid')->nullable();
-            $table->text('note')->nullable();
 
             $table->timestamps();
             $table->softDeletes();

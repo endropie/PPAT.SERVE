@@ -43,9 +43,10 @@ class CreateOutgoingGoodsTables extends Migration
             $table->unsignedInteger('outgoing_good_id')->nullable();
 
             $table->unsignedInteger('item_id');
+            $table->decimal('quantity');
             $table->unsignedInteger('unit_id');
             $table->decimal('unit_rate')->default(1);
-            $table->decimal('quantity');
+            $table->string('note')->nullable();
 
             $table->timestamps();
             $table->softDeletes();
