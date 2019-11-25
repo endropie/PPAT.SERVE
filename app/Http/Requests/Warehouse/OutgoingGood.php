@@ -28,7 +28,6 @@ class OutgoingGood extends Request
         return [
             'number' => $number,
             'date' => 'required',
-            'time' => 'required',
             'customer_id' => 'required',
 
             'outgoing_good_items.*.item_id' => 'required',

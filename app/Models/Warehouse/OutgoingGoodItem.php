@@ -13,7 +13,7 @@ class OutgoingGoodItem extends Model
     protected $appends = ['unit_amount'];
 
     protected $fillable = [
-        'item_id', 'unit_id', 'unit_rate', 'quantity',
+        'item_id', 'unit_id', 'unit_rate', 'quantity', 'note'
     ];
 
     protected $casts = [
@@ -31,6 +31,11 @@ class OutgoingGoodItem extends Model
     public function outgoing_good()
     {
         return $this->belongsTo('App\Models\Warehouse\OutgoingGood');
+    }
+
+    public function incoming_good_item()
+    {
+        return $this->belongsTo('App\Models\Warehouse\IncomingGoodItem');
     }
 
     public function item()

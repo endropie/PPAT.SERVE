@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Warehouses;
 use App\Http\Requests\Warehouse\OutgoingGood as Request;
 use App\Http\Controllers\ApiController;
 use App\Filters\Warehouse\OutgoingGood as Filters;
+use App\Models\Warehouse\IncomingGoodItem;
 use App\Models\Warehouse\OutgoingGood;
 use App\Traits\GenerateNumber;
 
@@ -50,9 +51,13 @@ class OutgoingGoods extends ApiController
             $detail = $outgoing_good->outgoing_good_items()->create($row);
             if (!$detail->item->enable) $this->error("PART [". $detail->item->code . "] DISABLED");
 
+            $incoming_good_item = IncomingGoodItem::find($row['incoming_good_item_id']);
+            $detail->incoming_good_item()->associate($incoming_good_item);
+            $detail->save();
+            $incoming_good_item->calculate();
         }
 
-        // DB::Commit => Before return function!
+        // $this->error('LOLOS');
         $this->DATABASE::commit();
         return response()->json($outgoing_good);
     }
@@ -85,7 +90,11 @@ class OutgoingGoods extends ApiController
         $outgoing_good->update($request->input());
 
         // Before Update Force delete incoming goods items
-        $outgoing_good->outgoing_good_items()->forceDelete();
+        $outgoing_good->outgoing_good_items->each(function($detail) {
+            $incoming_good_item = $detail->incoming_good_item;
+            $detail->forceDelete();
+            $incoming_good_item->calculate();
+        });
 
         // Update incoming goods items
         $rows = $request->outgoing_good_items;
@@ -94,6 +103,11 @@ class OutgoingGoods extends ApiController
             // Update or Create detail row
             $detail = $outgoing_good->outgoing_good_items()->create($row);
             if (!$detail->item->enable) $this->error("PART [". $detail->item->code . "] DISABLED");
+
+            $incoming_good_item = IncomingGoodItem::find($row['incoming_good_item_id']);
+            $detail->incoming_good_item()->associate($incoming_good_item);
+            $detail->save();
+            $incoming_good_item->calculate();
         }
 
         $this->DATABASE::commit();
@@ -118,8 +132,10 @@ class OutgoingGoods extends ApiController
 
         if($details = $outgoing_good->outgoing_good_items) {
             foreach ($details as $detail) {
+                $incoming_good_item = $detail->incoming_good_item;
                 $detail->item->distransfer($detail);
                 $detail->delete();
+                $incoming_good_item->calculate();
             }
         }
 
@@ -159,8 +175,10 @@ class OutgoingGoods extends ApiController
         $revise = OutgoingGood::findOrFail($id);
         $details = $revise->outgoing_good_items;
         foreach ($details as $detail) {
+            $incoming_good_item = $detail->incoming_good_item;
             $detail->item->distransfer($detail);
             $detail->delete();
+            $incoming_good_item->calculate();
         }
 
         if($request->number) {
