@@ -106,9 +106,9 @@ trait GenerateNumber
         return $number;
     }
 
-    protected function prefixParser($modul, $prefix = '', $interval = '{Y}')
+    protected function prefixParser($modul, $prefix = '', $interval = '{Y-m}')
     {
-        if (setting()->get("$modul.number_prefix")) $prefix .= setting()->get("$modul.number_prefix", $prefix);
+        if (setting()->get("$modul.number_prefix")) $prefix = setting()->get("$modul.number_prefix", $prefix);
         if (strlen($prefix) > 0) $prefix .= setting()->get("general.prefix_separator",'/');
 
         if (setting()->get("$modul.number_interval")) $interval = setting()->get("$modul.number_interval", $interval);
